@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { TierOption } from '@/types/content';
 import { formatBRL } from '@/lib/format';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface DonationModalProps {
   open: boolean;
@@ -152,6 +153,10 @@ export function DonationModal({
 
       if (!response.ok) {
         throw new Error(data?.error || 'Falha ao gerar cobrança PIX.');
+      }
+
+      if (!data?.pixCode || typeof data.pixCode !== 'string') {
+        throw new Error('A cobrança foi criada, mas o código PIX não foi recebido.');
       }
 
       setPix(data as PixResult);
@@ -505,6 +510,17 @@ function PixStep({
             alt="QR Code PIX"
             className="mx-auto h-48 w-48 rounded-lg"
           />
+        ) : pix.pixCode ? (
+          <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-lg bg-white p-2">
+            <QRCodeSVG
+              value={pix.pixCode}
+              size={176}
+              level="M"
+              includeMargin
+              title="QR Code para pagamento PIX"
+              className="h-full w-full"
+            />
+          </div>
         ) : (
           <div className="mx-auto flex h-48 w-48 items-center justify-center rounded-lg bg-stone-50">
             <QrCode className="h-16 w-16 text-stone-300" />
