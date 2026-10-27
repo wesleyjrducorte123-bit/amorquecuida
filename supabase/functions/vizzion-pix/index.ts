@@ -10,8 +10,8 @@ interface PixChargeRequest {
   amount: number;
   donorName: string;
   donorEmail: string;
-  donorPhone?: string;
-  donorDocument?: string;
+  donorPhone: string;
+  donorDocument: string;
   message?: string;
   isAnonymous?: boolean;
 }
@@ -56,8 +56,8 @@ async function createPixCharge(
     client: {
       name: body.isAnonymous ? "Doador Anônimo" : body.donorName,
       email: body.donorEmail,
-      ...(body.donorPhone ? { phone: body.donorPhone } : {}),
-      ...(body.donorDocument ? { document: body.donorDocument } : {}),
+      phone: body.donorPhone,
+      document: body.donorDocument,
     },
     products: [
       {
@@ -97,15 +97,17 @@ async function createPixCharge(
   if (!response.ok) {
     const errMsg =
       data?.message || data?.errorDescription || "Erro ao criar cobrança PIX.";
-    throw new Error(`VizzionPay: ${errMsg}`);
+    const details = data?.details ? ` Detalhes: ${JSON.stringify(data.details)}` : "";
+    const fullResponse = data?.details ? ` ${JSON.stringify(data)}` : "";
+    throw new Error(`VizzionPay: ${errMsg}${details}${fullResponse}`);
   }
 
   return {
-    transactionId: data.transactionId,
-    pixCode: data.pix?.code ?? "",
-    pixImage: data.pix?.image ?? null,
-    expiresAt: data.pix?.expiresAt ?? null,
-    status: data.status,
+    transactionId: data.transactionId ?? data.id ?? data.transaction?.id ?? identifier,
+    pixCode: data.pix?.code ?? data.pixCode ?? data.pix_code ?? data.code ?? "",
+    pixImage: data.pix?.image ?? data.pixImage ?? data.qrCodeImage ?? data.image ?? null,
+    expiresAt: data.pix?.expiresAt ?? data.expiresAt ?? data.expirationDate ?? null,
+    status: data.status ?? data.transaction?.status ?? "PENDING",
   };
 }
 
@@ -134,6 +136,20 @@ Deno.serve(async (req: Request) => {
     if (!body.donorEmail) {
       return new Response(
         JSON.stringify({ error: "E-mail do doador é obrigatório." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!body.donorPhone) {
+      return new Response(
+        JSON.stringify({ error: "Telefone do doador é obrigatório." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!body.donorDocument) {
+      return new Response(
+        JSON.stringify({ error: "CPF ou CNPJ do doador é obrigatório." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

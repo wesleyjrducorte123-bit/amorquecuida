@@ -119,6 +119,14 @@ export function DonationModal({
       setError('Informe seu nome ou marque a opção de doação anônima.');
       return;
     }
+    if (!phone.trim()) {
+      setError('Informe seu telefone para continuar.');
+      return;
+    }
+    if (!donorDocument.trim()) {
+      setError('Informe seu CPF ou CNPJ para continuar.');
+      return;
+    }
     setError('');
     setLoadingPix(true);
     try {
@@ -133,8 +141,8 @@ export function DonationModal({
           amount: finalAmount,
           donorName: anonymous ? 'Doador Anônimo' : name,
           donorEmail: email,
-          donorPhone: phone || undefined,
-          donorDocument: donorDocument || undefined,
+          donorPhone: phone,
+          donorDocument: donorDocument,
           message: message || undefined,
           isAnonymous: anonymous,
         }),
@@ -399,7 +407,7 @@ function DonorStep({
 
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-stone-600">Telefone (opcional)</span>
+            <span className="mb-1 block text-xs font-medium text-stone-600">Telefone *</span>
             <input
               type="text"
               value={phone}
@@ -409,7 +417,7 @@ function DonorStep({
             />
           </label>
           <label className="block">
-            <span className="mb-1 block text-xs font-medium text-stone-600">CPF/CNPJ (opcional)</span>
+            <span className="mb-1 block text-xs font-medium text-stone-600">CPF/CNPJ *</span>
             <input
               type="text"
               value={document}
