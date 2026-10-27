@@ -102,12 +102,15 @@ async function createPixCharge(
     throw new Error(`VizzionPay: ${errMsg}${details}${fullResponse}`);
   }
 
+  const base64 = data.pix?.base64 ?? "";
+  const pixImage = base64 ? `data:image/png;base64,${base64}` : null;
+
   return {
-    transactionId: data.transactionId ?? data.id ?? data.transaction?.id ?? identifier,
-    pixCode: data.pix?.code ?? data.pixCode ?? data.pix_code ?? data.code ?? "",
-    pixImage: data.pix?.image ?? data.pixImage ?? data.qrCodeImage ?? data.image ?? null,
-    expiresAt: data.pix?.expiresAt ?? data.expiresAt ?? data.expirationDate ?? null,
-    status: data.status ?? data.transaction?.status ?? "PENDING",
+    transactionId: data.transactionId ?? data.id ?? identifier,
+    pixCode: data.pix?.code ?? "",
+    pixImage,
+    expiresAt: null,
+    status: data.status ?? "PENDING",
   };
 }
 
