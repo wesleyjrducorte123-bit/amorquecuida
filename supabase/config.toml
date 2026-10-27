@@ -1,0 +1,11 @@
+[functions.promote-first-admin]
+verify_jwt = true
+entrypoint = "./functions/promote-first-admin/index.ts"
+
+[functions.vizzion-pix]
+verify_jwt = false
+entrypoint = "./functions/vizzion-pix/index.ts"
+
+[functions.vizzion-webhook]
+verify_jwt = false
+entrypoint = "./functions/vizzion-webhook/index.ts"
