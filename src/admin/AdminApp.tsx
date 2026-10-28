@@ -14,6 +14,7 @@ import { RevisionsPage } from '@/admin/pages/RevisionsPage';
 import { PreviewPage } from '@/admin/pages/PreviewPage';
 import { DonationsPage } from '@/admin/pages/DonationsPage';
 import { PaymentGatewayPage } from '@/admin/pages/PaymentGatewayPage';
+import { TrackingPixelsPage } from '@/admin/pages/TrackingPixelsPage';
 import { useAuth } from '@/lib/auth';
 import { AdminContentProvider } from '@/admin/AdminContent';
 
@@ -26,6 +27,7 @@ export type AdminPage =
   | 'campaign'
   | 'donations'
   | 'gateway'
+  | 'tracking'
   | 'seo'
   | 'appearance'
   | 'settings'
@@ -57,6 +59,7 @@ export default function AdminApp() {
     campaign: <CampaignEditor />,
     donations: <DonationsPage />,
     gateway: <PaymentGatewayPage />,
+    tracking: <TrackingPixelsPage />,
     seo: <SeoEditor />,
     appearance: <AppearanceEditor />,
     settings: <SettingsEditor />,

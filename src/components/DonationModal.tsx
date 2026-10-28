@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import type { TierOption } from '@/types/content';
 import { formatBRL } from '@/lib/format';
+import { trackDonation } from '@/lib/pixels';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface DonationModalProps {
@@ -161,6 +162,7 @@ export function DonationModal({
 
       setPix(data as PixResult);
       setStep('pix');
+      trackDonation(finalAmount);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao processar pagamento.');
     } finally {

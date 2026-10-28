@@ -16,6 +16,7 @@ const NAV: { key: AdminPage; label: string }[] = [
   { key: 'campaign', label: 'Campanha e valores' },
   { key: 'donations', label: 'Doações e pagadores' },
   { key: 'gateway', label: 'Gateway de pagamentos' },
+  { key: 'tracking', label: 'Pixels e rastreamento' },
   { key: 'media', label: 'Biblioteca de mídia' },
   { key: 'seo', label: 'SEO e metadados' },
   { key: 'appearance', label: 'Aparência e cores' },

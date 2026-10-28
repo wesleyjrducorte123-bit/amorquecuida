@@ -12,6 +12,7 @@ import { VideoModal } from '@/components/VideoModal';
 import { loadPublishedContent } from '@/lib/content';
 import { defaultContent } from '@/config/defaultContent';
 import type { SiteContent } from '@/types/content';
+import { loadAndInitPixels, trackDonation } from '@/lib/pixels';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
 const SECTION_COMPONENTS: Record<
@@ -61,6 +62,7 @@ export default function PublicSite() {
         if (active) setLoading(false);
       }
     })();
+    loadAndInitPixels();
     return () => {
       active = false;
     };
