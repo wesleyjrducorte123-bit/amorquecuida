@@ -3,7 +3,8 @@ import PublicSite from '@/components/PublicSite';
 import AdminApp from '@/admin/AdminApp';
 
 function getRoute(): 'public' | 'admin' {
-  return window.location.pathname.startsWith('/admin') ? 'admin' : 'public';
+  const pathname = window.location.pathname.replace(/\/+$/, '') || '/';
+  return pathname === '/acesso-admin' ? 'admin' : 'public';
 }
 
 function App() {
