@@ -48,17 +48,39 @@ async function loadWebhookToken(): Promise<string | null> {
   return data?.webhook_token ?? null;
 }
 
-function mapStatus(status: string): "pending" | "paid" | "failed" | "refunded" {
+function mapStatus(status: string): "awaiting" | "pending" | "paid" | "failed" | "refunded" | "canceled" | "expired" {
   switch (status) {
     case "COMPLETED":
+    case "PAID":
       return "paid";
     case "FAILED":
+    case "DECLINED":
       return "failed";
     case "REFUNDED":
     case "CHARGED_BACK":
       return "refunded";
+    case "CANCELED":
+    case "CANCELLED":
+      return "canceled";
+    case "EXPIRED":
+      return "expired";
     default:
       return "pending";
+  }
+}
+
+function mapEventType(status: string): string {
+  switch (status) {
+    case "paid":
+      return "payment_confirmed";
+    case "failed":
+      return "payment_failed";
+    case "canceled":
+      return "canceled";
+    case "expired":
+      return "expired";
+    default:
+      return "payment_confirmed";
   }
 }
 
@@ -100,6 +122,8 @@ Deno.serve(async (req: Request) => {
       "TRANSACTION_CANCELED",
       "TRANSACTION_REFUNDED",
       "TRANSACTION_CHARGED_BACK",
+      "TRANSACTION_EXPIRED",
+      "TRANSACTION_FAILED",
     ];
     if (!validEvents.includes(payload.event)) {
       return new Response(
@@ -117,45 +141,40 @@ Deno.serve(async (req: Request) => {
     const status = mapStatus(txn.status);
     const donorName = payload.client.name || null;
     const donorEmail = payload.client.email || null;
+    const donorPhone = payload.client.phone || null;
+    const donorDocument = payload.client.cpf || payload.client.cnpj || null;
 
-    // Check if a donation with this provider_payment_id already exists (idempotency)
-    const { data: existing } = await supabase
-      .from("donations")
-      .select("id, status")
-      .eq("provider_payment_id", txn.id)
-      .maybeSingle();
-
-    if (existing) {
-      // Update status if changed
-      if (existing.status !== status) {
-        const updateData: Record<string, unknown> = { status };
-        if (status === "paid" && txn.payedAt) {
-          updateData.paid_at = txn.payedAt;
-        }
-        await supabase.from("donations").update(updateData).eq("id", existing.id);
-      }
-      return new Response(
-        JSON.stringify({ received: true, updated: true }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Insert new donation record
-    await supabase.from("donations").insert({
-      donor_name: donorName,
-      donor_email: donorEmail,
-      amount: txn.originalAmount || txn.amount,
-      currency: txn.currency || "BRL",
-      status,
-      provider: "vizzionpay",
-      provider_payment_id: txn.id,
-      is_anonymous: false,
-      created_at: txn.createdAt,
-      paid_at: status === "paid" ? (txn.payedAt ?? new Date().toISOString()) : null,
+    // Upsert the donation record (idempotent by provider_payment_id)
+    const { data: upserted, error: upsertErr } = await supabase.rpc("upsert_donation", {
+      p_provider_payment_id: txn.id,
+      p_donor_name: donorName,
+      p_donor_email: donorEmail,
+      p_donor_phone: donorPhone,
+      p_donor_document: donorDocument,
+      p_amount: txn.originalAmount || txn.amount,
+      p_status: status,
+      p_provider: "vizzionpay",
+      p_paid_at: status === "paid" ? (txn.payedAt ?? new Date().toISOString()) : null,
+      p_created_at: txn.createdAt,
     });
 
+    if (upsertErr) {
+      console.error("Failed to upsert donation:", upsertErr.message);
+    }
+
+    // Log the event (idempotent — event is always logged, deduplicated by donation_id + event_type at query time)
+    if (upserted) {
+      const eventType = mapEventType(status);
+      await supabase.from("donation_events").insert({
+        donation_id: upserted.id,
+        event_type: eventType,
+        amount: txn.originalAmount || txn.amount,
+        metadata: { transactionId: txn.id, rawEvent: payload.event },
+      });
+    }
+
     return new Response(
-      JSON.stringify({ received: true, created: true }),
+      JSON.stringify({ received: true, updated: true }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {

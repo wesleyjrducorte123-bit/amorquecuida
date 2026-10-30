@@ -15,6 +15,12 @@ import {
 import type { TierOption } from '@/types/content';
 import { formatBRL } from '@/lib/format';
 import { trackDonation } from '@/lib/pixels';
+import {
+  initiateDonation,
+  updateDonationStep,
+  updateDonorInfo,
+  markAbandoned,
+} from '@/lib/donationTracking';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface DonationModalProps {
@@ -57,6 +63,8 @@ export function DonationModal({
   const [pix, setPix] = useState<PixResult | null>(null);
   const [loadingPix, setLoadingPix] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [donationId, setDonationId] = useState<string | null>(null);
+  const pixGeneratedRef = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -64,6 +72,7 @@ export function DonationModal({
       setError('');
       setPix(null);
       setCopied(false);
+      pixGeneratedRef[1](false);
       if (initialAmount > 0) {
         setAmount(initialAmount);
         setCustom('');
@@ -71,6 +80,8 @@ export function DonationModal({
         setCustom('');
         setAmount(0);
       }
+      // Create a donation record when modal opens
+      initiateDonation(initialAmount || 30).then(setDonationId);
     }
   }, [open, initialAmount]);
 
@@ -86,6 +97,13 @@ export function DonationModal({
       document.body.style.overflow = '';
     };
   }, [open, onClose]);
+
+  // Mark as abandoned when modal closes without payment
+  useEffect(() => {
+    if (!open && donationId && !pixGeneratedRef[0]) {
+      markAbandoned(donationId);
+    }
+  }, [open, donationId]);
 
   if (!open) return null;
 
@@ -104,6 +122,9 @@ export function DonationModal({
     }
     setError('');
     setStep('donor');
+    if (donationId) {
+      updateDonationStep(donationId, 'select_amount', 'select_amount', finalAmount);
+    }
   }
 
   function handleCustomChange(v: string) {
@@ -131,6 +152,17 @@ export function DonationModal({
     }
     setError('');
     setLoadingPix(true);
+    if (donationId) {
+      updateDonorInfo(donationId, {
+        donor_name: anonymous ? null : name,
+        donor_email: email,
+        donor_phone: phone,
+        donor_document: donorDocument,
+        message: message || null,
+        is_anonymous: anonymous,
+      });
+      updateDonationStep(donationId, 'checkout_started', 'checkout_started', finalAmount);
+    }
     try {
       const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vizzion-pix`;
       const response = await fetch(apiUrl, {
@@ -147,6 +179,7 @@ export function DonationModal({
           donorDocument: donorDocument,
           message: message || undefined,
           isAnonymous: anonymous,
+          donationId: donationId,
         }),
       });
 
@@ -162,6 +195,7 @@ export function DonationModal({
 
       setPix(data as PixResult);
       setStep('pix');
+      pixGeneratedRef[1](true);
       trackDonation(finalAmount);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao processar pagamento.');

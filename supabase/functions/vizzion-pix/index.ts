@@ -14,6 +14,7 @@ interface PixChargeRequest {
   donorDocument: string;
   message?: string;
   isAnonymous?: boolean;
+  donationId?: string;
 }
 
 interface GatewaySettings {
@@ -166,6 +167,63 @@ Deno.serve(async (req: Request) => {
     }
 
     const result = await createPixCharge(settings, body);
+
+    // Record the donation in the database
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // If a donationId was provided (from the frontend tracking), update it
+    if (body.donationId) {
+      await supabase
+        .from("donations")
+        .update({
+          status: "awaiting",
+          checkout_step: "pix_generated",
+          provider_payment_id: result.transactionId,
+          donor_name: body.isAnonymous ? null : body.donorName,
+          donor_email: body.donorEmail,
+          donor_phone: body.donorPhone,
+          donor_document: body.donorDocument,
+          amount: body.amount,
+          message: body.message ?? null,
+          is_anonymous: body.isAnonymous ?? false,
+          provider: "vizzionpay",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", body.donationId);
+    } else {
+      // Upsert by provider_payment_id
+      await supabase.rpc("upsert_donation", {
+        p_provider_payment_id: result.transactionId,
+        p_donor_name: body.isAnonymous ? null : body.donorName,
+        p_donor_email: body.donorEmail,
+        p_donor_phone: body.donorPhone,
+        p_donor_document: body.donorDocument,
+        p_amount: body.amount,
+        p_message: body.message ?? null,
+        p_status: "awaiting",
+        p_provider: "vizzionpay",
+        p_is_anonymous: body.isAnonymous ?? false,
+      });
+    }
+
+    // Log the event
+    const donationRow = await supabase
+      .from("donations")
+      .select("id")
+      .eq("provider_payment_id", result.transactionId)
+      .maybeSingle();
+
+    if (donationRow.data) {
+      await supabase.from("donation_events").insert({
+        donation_id: donationRow.data.id,
+        event_type: "pix_generated",
+        amount: body.amount,
+        metadata: { transactionId: result.transactionId },
+      });
+    }
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

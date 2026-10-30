@@ -11,6 +11,8 @@ import {
   CircleCheck,
   DollarSign,
   Users,
+  Clock,
+  AlertCircle,
 } from 'lucide-react';
 import { PageHeader, Card } from '@/admin/ui';
 import { PublishBar } from '@/admin/PublishBar';
@@ -118,6 +120,56 @@ export function Dashboard({ onNavigate }: DashboardProps) {
               </button>
             </Card>
           </div>
+
+          {/* Extended donation stats */}
+          {donationStats && (
+            <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <Card>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+                    <TrendingUp className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-2xl font-bold text-stone-900">{donationStats.clickCount}</p>
+                    <p className="text-xs text-stone-500">doações iniciadas</p>
+                  </div>
+                </div>
+              </Card>
+              <Card>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
+                    <Clock className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-2xl font-bold text-stone-900">{donationStats.awaitingCount}</p>
+                    <p className="text-xs text-stone-500">aguardando pagamento</p>
+                  </div>
+                </div>
+              </Card>
+              <Card>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
+                    <AlertCircle className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-2xl font-bold text-stone-900">{donationStats.failedCount}</p>
+                    <p className="text-xs text-stone-500">recusadas</p>
+                  </div>
+                </div>
+              </Card>
+              <Card>
+                <div className="flex items-center gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-stone-100 text-stone-500">
+                    <Users className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <p className="text-2xl font-bold text-stone-900">{donationStats.abandonedCount}</p>
+                    <p className="text-xs text-stone-500">abandonaram checkout</p>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          )}
 
           {/* Recent donors */}
           {donationStats && donationStats.recent.length > 0 && (

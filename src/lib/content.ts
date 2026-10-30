@@ -231,15 +231,20 @@ export interface Donation {
   id: string;
   donor_name: string | null;
   donor_email: string | null;
+  donor_phone: string | null;
+  donor_document: string | null;
   amount: number;
   currency: string;
   message: string | null;
-  status: 'pending' | 'paid' | 'failed' | 'refunded';
+  status: 'initiated' | 'awaiting' | 'pending' | 'paid' | 'failed' | 'refunded' | 'canceled' | 'expired';
   provider: string;
   provider_payment_id: string | null;
   is_anonymous: boolean;
+  checkout_step: string | null;
+  abandoned_at: string | null;
   created_at: string;
   paid_at: string | null;
+  updated_at: string | null;
 }
 
 export interface DonationStats {
@@ -247,6 +252,13 @@ export interface DonationStats {
   donorCount: number;
   paidCount: number;
   pendingCount: number;
+  initiatedCount: number;
+  awaitingCount: number;
+  failedCount: number;
+  canceledCount: number;
+  expiredCount: number;
+  abandonedCount: number;
+  clickCount: number;
   averageAmount: number;
   recent: Donation[];
 }
@@ -254,7 +266,7 @@ export interface DonationStats {
 export async function listDonations(): Promise<Donation[]> {
   const { data, error } = await supabase
     .from('donations')
-    .select('id, donor_name, donor_email, amount, currency, message, status, provider, provider_payment_id, is_anonymous, created_at, paid_at')
+    .select('id, donor_name, donor_email, donor_phone, donor_document, amount, currency, message, status, provider, provider_payment_id, is_anonymous, checkout_step, abandoned_at, created_at, paid_at, updated_at')
     .order('created_at', { ascending: false });
   if (error) throw error;
   return (data ?? []) as Donation[];
@@ -265,11 +277,20 @@ export async function loadDonationStats(): Promise<DonationStats> {
   const paid = donations.filter((d) => d.status === 'paid');
   const totalRaised = paid.reduce((sum, d) => sum + Number(d.amount), 0);
   const donorCount = new Set(paid.map((d) => d.donor_email ?? d.id)).size;
+  const abandonedCount = donations.filter((d) => d.checkout_step === 'abandoned' || d.abandoned_at !== null).length;
+  const clickCount = donations.filter((d) => d.checkout_step === 'click' || d.status === 'initiated').length;
   return {
     totalRaised,
     donorCount,
     paidCount: paid.length,
     pendingCount: donations.filter((d) => d.status === 'pending').length,
+    initiatedCount: donations.filter((d) => d.status === 'initiated').length,
+    awaitingCount: donations.filter((d) => d.status === 'awaiting').length,
+    failedCount: donations.filter((d) => d.status === 'failed').length,
+    canceledCount: donations.filter((d) => d.status === 'canceled').length,
+    expiredCount: donations.filter((d) => d.status === 'expired').length,
+    abandonedCount,
+    clickCount,
     averageAmount: paid.length > 0 ? totalRaised / paid.length : 0,
     recent: donations.slice(0, 8),
   };
@@ -300,7 +321,7 @@ export async function addDonation(input: {
 }
 
 export async function updateDonationStatus(id: string, status: Donation['status']): Promise<void> {
-  const patch: Record<string, unknown> = { status };
+  const patch: Record<string, unknown> = { status, updated_at: new Date().toISOString() };
   if (status === 'paid') patch.paid_at = new Date().toISOString();
   const { error } = await supabase.from('donations').update(patch).eq('id', id);
   if (error) throw error;

@@ -9,6 +9,7 @@ import {
   Clock,
   TrendingUp,
   Download,
+  CircleCheck,
 } from 'lucide-react';
 import { PageHeader, Card, Field } from '@/admin/ui';
 import { PublishBar } from '@/admin/PublishBar';
@@ -23,17 +24,25 @@ import {
 } from '@/lib/content';
 
 const STATUS_LABELS: Record<Donation['status'], string> = {
+  initiated: 'Iniciada',
+  awaiting: 'Aguardando pagamento',
   pending: 'Pendente',
   paid: 'Pago',
-  failed: 'Falhou',
-  refunded: 'Reembolsado',
+  failed: 'Recusada',
+  refunded: 'Reembolsada',
+  canceled: 'Cancelada',
+  expired: 'Expirada',
 };
 
 const STATUS_COLORS: Record<Donation['status'], string> = {
+  initiated: 'bg-blue-100 text-blue-700',
+  awaiting: 'bg-amber-100 text-amber-700',
   pending: 'bg-amber-100 text-amber-700',
   paid: 'bg-emerald-100 text-emerald-700',
   failed: 'bg-rose-100 text-rose-700',
   refunded: 'bg-stone-200 text-stone-600',
+  canceled: 'bg-stone-200 text-stone-600',
+  expired: 'bg-orange-100 text-orange-700',
 };
 
 function formatBRL(value: number): string {
@@ -135,8 +144,8 @@ export function DonationsPage() {
                 <TrendingUp className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-xl font-bold text-stone-900">{formatBRL(stats.averageAmount)}</p>
-                <p className="text-xs text-stone-500">ticket médio</p>
+                <p className="text-xl font-bold text-stone-900">{stats.clickCount}</p>
+                <p className="text-xs text-stone-500">doações iniciadas</p>
               </div>
             </div>
           </Card>
@@ -146,8 +155,63 @@ export function DonationsPage() {
                 <Clock className="h-5 w-5" />
               </span>
               <div>
-                <p className="text-xl font-bold text-stone-900">{stats.pendingCount}</p>
+                <p className="text-xl font-bold text-stone-900">{stats.awaitingCount + stats.pendingCount}</p>
                 <p className="text-xs text-stone-500">pagamentos pendentes</p>
+              </div>
+            </div>
+          </Card>
+          <Card>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600">
+                <CircleCheck className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xl font-bold text-stone-900">{stats.paidCount}</p>
+                <p className="text-xs text-stone-500">pagamentos confirmados</p>
+              </div>
+            </div>
+          </Card>
+          <Card>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
+                <AlertCircle className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xl font-bold text-stone-900">{stats.failedCount}</p>
+                <p className="text-xs text-stone-500">pagamentos recusados</p>
+              </div>
+            </div>
+          </Card>
+          <Card>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-stone-100 text-stone-600">
+                <Trash2 className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xl font-bold text-stone-900">{stats.canceledCount}</p>
+                <p className="text-xs text-stone-500">pagamentos cancelados</p>
+              </div>
+            </div>
+          </Card>
+          <Card>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+                <Clock className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xl font-bold text-stone-900">{stats.expiredCount}</p>
+                <p className="text-xs text-stone-500">pagamentos expirados</p>
+              </div>
+            </div>
+          </Card>
+          <Card>
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-stone-100 text-stone-500">
+                <Users className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xl font-bold text-stone-900">{stats.abandonedCount}</p>
+                <p className="text-xs text-stone-500">abandonaram o checkout</p>
               </div>
             </div>
           </Card>
