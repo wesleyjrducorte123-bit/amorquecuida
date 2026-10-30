@@ -9,3 +9,7 @@ entrypoint = "./functions/vizzion-pix/index.ts"
 [functions.vizzion-webhook]
 verify_jwt = false
 entrypoint = "./functions/vizzion-webhook/index.ts"
+
+[functions.vizzion-sync]
+verify_jwt = true
+entrypoint = "./functions/vizzion-sync/index.ts"
