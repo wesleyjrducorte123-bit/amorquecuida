@@ -1,0 +1,21 @@
+{
+  "projectId": "72439477",
+  "functions": {
+    "promote-first-admin": {
+      "hasChanged": false,
+      "hash": "19509387082eafb425be5b9cde1e17dec3b1315986fd9ad79f1df04f1074243b"
+    },
+    "vizzion-pix": {
+      "hasChanged": false,
+      "hash": "577eb4319e2f1f584672cbe3ac475c8f2cca2301b63df6b587283f7f1eadfd23"
+    },
+    "vizzion-sync": {
+      "hasChanged": false,
+      "hash": "096916203dbfd8c9c554b559644c9062a4cf13d7cd8763f1a60b48b5861e0072"
+    },
+    "vizzion-webhook": {
+      "hasChanged": false,
+      "hash": "f397dba956cdcd9bbea279fe0ece31d461a42592415e2023284c911ca45da0e8"
+    }
+  }
+}

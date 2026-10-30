@@ -10,6 +10,8 @@ import {
   TrendingUp,
   Download,
   CircleCheck,
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 import { PageHeader, Card, Field } from '@/admin/ui';
 import { PublishBar } from '@/admin/PublishBar';
@@ -55,6 +57,9 @@ export function DonationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+  const [gatewayStatus, setGatewayStatus] = useState<{ enabled: boolean; hasWebhookToken: boolean; hasWebhookUrl: boolean } | null>(null);
 
   async function reload() {
     setLoading(true);
@@ -72,7 +77,61 @@ export function DonationsPage() {
 
   useEffect(() => {
     reload();
+    loadGatewayStatus();
   }, []);
+
+  async function loadGatewayStatus() {
+    try {
+      const { supabase } = await import('@/lib/supabase');
+      const { data } = await supabase
+        .from('gateway_settings')
+        .select('enabled, webhook_token, webhook_url')
+        .eq('provider', 'vizzionpay')
+        .maybeSingle();
+      if (data) {
+        setGatewayStatus({
+          enabled: data.enabled,
+          hasWebhookToken: !!(data.webhook_token && data.webhook_token.trim()),
+          hasWebhookUrl: !!(data.webhook_url && data.webhook_url.trim()),
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  async function handleSync() {
+    setSyncing(true);
+    setSyncResult(null);
+    setError(null);
+    try {
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/vizzion-sync`;
+      const { supabase } = await import('@/lib/supabase');
+      const { data: sessionData } = await supabase.auth.getSession();
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionData.session?.access_token ?? ''}`,
+          apikey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({}),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data?.error || 'Falha ao sincronizar.');
+      }
+      const msg = data.synced != null
+        ? `Sincronização concluída: ${data.synced} transações verificadas${data.updated ? `, ${data.updated} atualizadas` : ''}.${data.errors?.length ? ` ${data.errors.length} erro(s).` : ''}`
+        : 'Sincronização concluída.';
+      setSyncResult(msg);
+      await reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Falha ao sincronizar.');
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   function exportCSV() {
     const rows = [
@@ -105,6 +164,28 @@ export function DonationsPage() {
         title="Doações e pagadores"
         subtitle="Controle de quem fez pagamentos e doações à campanha."
       />
+
+      {/* Webhook warning */}
+      {gatewayStatus && gatewayStatus.enabled && !gatewayStatus.hasWebhookToken && (
+        <div className="mb-4 flex items-start gap-2 rounded-lg bg-amber-50 p-4 text-xs leading-relaxed text-amber-800">
+          <AlertTriangle className="h-4 w-4 flex-none mt-0.5" />
+          <div>
+            <p className="font-semibold">Atenção: Token do webhook não configurado</p>
+            <p className="mt-1">
+              Sem o token de validação, o webhook aceita notificações da VizzionPay sem verificação extra.
+              Configure um token na página "Gateway de pagamentos" para garantir que somente
+              notificações legítimas sejam processadas.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {syncResult && (
+        <p className="mb-4 flex items-center gap-1.5 text-sm text-emerald-600">
+          <CircleCheck className="h-4 w-4" />
+          {syncResult}
+        </p>
+      )}
 
       {error && (
         <p className="mb-4 flex items-center gap-1.5 text-sm text-rose-600">
@@ -226,6 +307,14 @@ export function DonationsPage() {
         >
           <Plus className="h-4 w-4" />
           Registrar doação manual
+        </button>
+        <button
+          onClick={handleSync}
+          disabled={syncing}
+          className="flex items-center gap-1.5 rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 disabled:opacity-50"
+        >
+          {syncing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Sincronizar com VizzionPay
         </button>
         <button
           onClick={exportCSV}

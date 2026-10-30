@@ -100,20 +100,20 @@ Deno.serve(async (req: Request) => {
     const payload: WebhookPayload = await req.json();
 
     const expectedToken = await loadWebhookToken();
-    if (!expectedToken) {
-      console.error("No webhook token configured");
-      return new Response(
-        JSON.stringify({ error: "Token não configurado." }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
 
-    if (payload.token !== expectedToken) {
-      console.error("Invalid webhook token");
-      return new Response(
-        JSON.stringify({ error: "Token inválido." }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    // If a webhook token is configured, validate it strictly.
+    // If no token is configured yet, accept the webhook but log a warning
+    // so payments are not lost while the admin sets up the token.
+    if (expectedToken) {
+      if (payload.token !== expectedToken) {
+        console.error("Invalid webhook token");
+        return new Response(
+          JSON.stringify({ error: "Token inválido." }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else {
+      console.warn("Webhook received without token validation — configure webhook_token in gateway settings.");
     }
 
     const validEvents = [
@@ -187,3 +187,4 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+
