@@ -301,7 +301,7 @@ export async function addDonation(input: {
   donor_email?: string | null;
   amount: number;
   message?: string | null;
-  status?: 'pending' | 'paid' | 'failed' | 'refunded';
+  status?: Donation['status'];
   provider?: string;
   is_anonymous?: boolean;
   paid_at?: string | null;

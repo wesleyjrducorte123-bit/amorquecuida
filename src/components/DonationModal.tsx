@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   X,
   Heart,
@@ -64,7 +64,7 @@ export function DonationModal({
   const [loadingPix, setLoadingPix] = useState(false);
   const [copied, setCopied] = useState(false);
   const [donationId, setDonationId] = useState<string | null>(null);
-  const pixGeneratedRef = useState(false);
+  const pixGeneratedRef = useRef(false);
 
   useEffect(() => {
     if (open) {
@@ -72,7 +72,7 @@ export function DonationModal({
       setError('');
       setPix(null);
       setCopied(false);
-      pixGeneratedRef[1](false);
+      pixGeneratedRef.current = false;
       if (initialAmount > 0) {
         setAmount(initialAmount);
         setCustom('');
@@ -100,7 +100,7 @@ export function DonationModal({
 
   // Mark as abandoned when modal closes without payment
   useEffect(() => {
-    if (!open && donationId && !pixGeneratedRef[0]) {
+    if (!open && donationId && !pixGeneratedRef.current) {
       markAbandoned(donationId);
     }
   }, [open, donationId]);
@@ -195,7 +195,7 @@ export function DonationModal({
 
       setPix(data as PixResult);
       setStep('pix');
-      pixGeneratedRef[1](true);
+      pixGeneratedRef.current = true;
       trackDonation(finalAmount);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Erro ao processar pagamento.');

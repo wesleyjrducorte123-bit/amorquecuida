@@ -410,8 +410,12 @@ function AddDonationModal({
             >
               <option value="paid">Pago</option>
               <option value="pending">Pendente</option>
-              <option value="failed">Falhou</option>
-              <option value="refunded">Reembolsado</option>
+              <option value="awaiting">Aguardando pagamento</option>
+              <option value="initiated">Iniciada</option>
+              <option value="failed">Recusada</option>
+              <option value="refunded">Reembolsada</option>
+              <option value="canceled">Cancelada</option>
+              <option value="expired">Expirada</option>
             </select>
           </label>
           <label className="flex items-center gap-2 text-sm text-stone-600">

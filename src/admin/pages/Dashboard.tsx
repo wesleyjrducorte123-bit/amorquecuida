@@ -171,11 +171,11 @@ export function Dashboard({ onNavigate }: DashboardProps) {
             </div>
           )}
 
-          {/* Recent donors */}
+          {/* Recent activities */}
           {donationStats && donationStats.recent.length > 0 && (
             <>
               <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">Doações recentes</h2>
+                <h2 className="text-sm font-semibold uppercase tracking-wider text-stone-500">Atividades recentes</h2>
                 <button
                   onClick={() => onNavigate('donations')}
                   className="text-sm font-medium text-rose-600 hover:underline"
@@ -185,24 +185,47 @@ export function Dashboard({ onNavigate }: DashboardProps) {
               </div>
               <Card className="mb-8">
                 <ul className="divide-y divide-stone-100">
-                  {donationStats.recent.slice(0, 5).map((d) => (
-                    <li key={d.id} className="flex items-center justify-between py-2.5">
-                      <div>
-                        <p className="text-sm font-medium text-stone-800">
-                          {d.is_anonymous ? 'Anônimo' : (d.donor_name || '—')}
-                        </p>
-                        <p className="text-xs text-stone-400">
-                          {new Date(d.created_at).toLocaleDateString('pt-BR')}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-stone-800">{formatBRL(Number(d.amount))}</p>
-                        <p className={`text-xs ${d.status === 'paid' ? 'text-emerald-600' : 'text-amber-600'}`}>
-                          {d.status === 'paid' ? 'Pago' : d.status === 'pending' ? 'Pendente' : d.status}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
+                  {donationStats.recent.slice(0, 8).map((d) => {
+                    const statusLabel: Record<string, string> = {
+                      initiated: 'Iniciada',
+                      awaiting: 'Aguardando',
+                      pending: 'Pendente',
+                      paid: 'Pago',
+                      failed: 'Recusada',
+                      refunded: 'Reembolsada',
+                      canceled: 'Cancelada',
+                      expired: 'Expirada',
+                    };
+                    const statusColor: Record<string, string> = {
+                      paid: 'text-emerald-600',
+                      failed: 'text-rose-600',
+                      canceled: 'text-stone-400',
+                      expired: 'text-orange-600',
+                      awaiting: 'text-amber-600',
+                      pending: 'text-amber-600',
+                      initiated: 'text-blue-600',
+                      refunded: 'text-stone-500',
+                    };
+                    return (
+                      <li key={d.id} className="flex items-center justify-between py-2.5">
+                        <div>
+                          <p className="text-sm font-medium text-stone-800">
+                            {d.is_anonymous ? 'Anônimo' : (d.donor_name || 'Visitante')}
+                          </p>
+                          <p className="text-xs text-stone-400">
+                            {new Date(d.created_at).toLocaleDateString('pt-BR')}
+                            {d.checkout_step ? ` · ${d.checkout_step}` : ''}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-stone-800">{formatBRL(Number(d.amount))}</p>
+                          <p className={`text-xs ${statusColor[d.status] ?? 'text-stone-400'}`}>
+                            {statusLabel[d.status] ?? d.status}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
               </Card>
             </>
